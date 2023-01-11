@@ -3,6 +3,6 @@ package com.example.MySpringBootBankApplication.dtos.AccountDtos.responses;
 import lombok.Data;
 
 @Data
-public class TransferResponse {
+public class CloseAccountResponse {
     private String message;
 }

@@ -6,9 +6,7 @@ import com.example.MySpringBootBankApplication.data.repository.BankUserRepositor
 import com.example.MySpringBootBankApplication.dtos.AccountDtos.request.*;
 import com.example.MySpringBootBankApplication.dtos.AccountDtos.responses.*;
 //import com.example.MySpringBootBankApplication.exception.AccountException.ChangePinException;
-import com.example.MySpringBootBankApplication.exception.AccountException.CreateAccountException;
-import com.example.MySpringBootBankApplication.exception.AccountException.DepositException;
-import com.example.MySpringBootBankApplication.exception.AccountException.WithdrawalException;
+import com.example.MySpringBootBankApplication.exception.AccountException.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,7 +51,7 @@ try {
     void changePinTest(){
         ChangePinRequest changePinRequest = new ChangePinRequest();
         ChangePinResponse changePinResponse = new ChangePinResponse();
-        changePinRequest.setAccountNumber("9907916230");
+        changePinRequest.setAccountNumber("5187516502");
 //        changePinRequest.setAccountNumber("2900228141");
 
         try{
@@ -74,7 +72,7 @@ try {
         DepositAccountResponse depositAccountResponse = new DepositAccountResponse();
         try {
             depositAccountRequest.setDepositAmount(depositAmount);
-            depositAccountRequest.setAccountNumber("9907916230");
+            depositAccountRequest.setAccountNumber("5187516502");
             depositAccountResponse = accountService.deposit(depositAccountRequest);
             System.out.println(depositAccountResponse.getMessage());
         }catch (AccountNotFoundException e){
@@ -93,7 +91,7 @@ try {
 
         try{
             withdrawalAccountRequest.setWithdrawalAmount(withdrawalAmount);
-            withdrawalAccountRequest.setAccountNumber("9907916230");
+            withdrawalAccountRequest.setAccountNumber("5187516502");
             withdrawalAccountResponse = accountService.withdrawal(withdrawalAccountRequest);
             System.out.println(withdrawalAccountResponse.getMessage());
         } catch (WithdrawalException e) {
@@ -109,7 +107,7 @@ try {
         ShowBalanceResponse balanceResponse = new ShowBalanceResponse();
 
         try{
-            showBalanceRequest.setAccountNumber("9907916230");
+            showBalanceRequest.setAccountNumber("5187516502");
             balanceResponse = accountService.showBalance(showBalanceRequest);
             System.out.println(balanceResponse.getBalance());
 
@@ -117,7 +115,60 @@ try {
             assertEquals(BigDecimal.valueOf(500),balanceResponse.getBalance());
 
         }
+
     }
+    @Test
+    void accountCanBeAddedTest(){
+        AddAccountRequest addAccountRequest = new AddAccountRequest();
+        AddAccountResponse addAccountResponse = new AddAccountResponse();
+
+        try{
+            addAccountRequest.setAccountFirstName("Tobi");
+            addAccountRequest.setAccountLastName("Akinsanya");
+            addAccountRequest.setAccountType(AccountType.CURRENT);
+            addAccountRequest.setEmailAddress("Tobi345");
+            addAccountRequest.setPin("1675");
+
+            addAccountResponse = accountService.addAccount(addAccountRequest);
+            System.out.println(addAccountResponse.getAccountNumber());
+        } catch (AccountAlreadyExistException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        assertEquals("Account added",addAccountResponse.getMessage());
+    }
+    @Test
+    void transferMoneyFromOneAccountToAnotherTest(){
+        TransferRequest transferRequest = new TransferRequest();
+        TransferResponse transferResponse = new TransferResponse();
+
+        try{
+            transferRequest.setDepositorAccountNumber("5187516502");
+            transferRequest.setRecipientAccountNumber("7011863980");
+            BigDecimal withdrawalAmount = new BigDecimal("300");
+            transferRequest.setTransferAmount(withdrawalAmount);
+            transferResponse = accountService.transfer(transferRequest);
+        } catch (TransferException | AccountNotFoundException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+
+        assertEquals("Transfer sent successful",transferResponse.getMessage());
+    }
+
+    @Test
+    void testThatAccountCanBeClosed(){
+        CloseAccountRequest closeAccountRequest = new CloseAccountRequest();
+        CloseAccountResponse closeAccountResponse = new CloseAccountResponse();
+
+        try {
+            closeAccountRequest.setAccountNumber("9907916230");
+            closeAccountResponse = accountService.close(closeAccountRequest);
+        } catch (AccountNotFoundException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+        assertEquals("Account closed",closeAccountResponse.getMessage());
+    }
+//    @Test
+//    void findall
 
 
 }

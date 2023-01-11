@@ -6,9 +6,7 @@ import com.example.MySpringBootBankApplication.data.repository.BankUserRepositor
 import com.example.MySpringBootBankApplication.dtos.AccountDtos.request.*;
 import com.example.MySpringBootBankApplication.dtos.AccountDtos.responses.*;
 //import com.example.MySpringBootBankApplication.exception.AccountException.ChangePinException;
-import com.example.MySpringBootBankApplication.exception.AccountException.CreateAccountException;
-import com.example.MySpringBootBankApplication.exception.AccountException.DepositException;
-import com.example.MySpringBootBankApplication.exception.AccountException.WithdrawalException;
+import com.example.MySpringBootBankApplication.exception.AccountException.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +19,7 @@ import java.util.Optional;
 public class AccountServiceImpl implements AccountService {
 
     @Autowired
-//    private AccountRepository accountRepository;
+
     private BankUserRepository bankUserRepository;
     @Autowired
     private AccountRepository accountRepository;
@@ -109,12 +107,38 @@ public class AccountServiceImpl implements AccountService {
         return withdrawalAccountResponse;
 
 
+
+
     }
 
     @Override
-    public TransferResponse transfer(TransferRequest transferRequest) {
-        return null;
+    public TransferResponse transfer(TransferRequest transferRequest) throws AccountNotFoundException, TransferException {
+        TransferResponse response = new TransferResponse();
+        Optional<Account> depositorAccountFound = accountRepository.findByAccountNumber(transferRequest.getDepositorAccountNumber());
+        if(depositorAccountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        Account depositor = depositorAccountFound.get();
+
+        Optional<Account> receiverAccountFound = accountRepository.findByAccountNumber(transferRequest.getRecipientAccountNumber());
+        if(receiverAccountFound.isEmpty())throw new AccountNotFoundException("Account does not exist");
+        Account receiver = receiverAccountFound.get();
+
+        if(depositor.getBalance().compareTo(transferRequest.getTransferAmount()) < 0)
+            throw new TransferException("You do not have enough money to make transfer....");
+
+        depositor.setBalance(depositor.getBalance().subtract(transferRequest.getTransferAmount()));
+        receiver.setBalance(transferRequest.getTransferAmount().add(receiver.getBalance()));
+        accountRepository.save(depositor);
+        accountRepository.save(receiver);
+
+
+        response.setMessage("Transfer sent successful");
+
+        return response;
+
+
     }
+
+
 
 
     @Override
@@ -137,6 +161,48 @@ public class AccountServiceImpl implements AccountService {
         balanceResponse.setBalance(account.getBalance());
 
         return balanceResponse;
+    }
+
+    @Override
+    public CloseAccountResponse close(CloseAccountRequest request) throws AccountNotFoundException {
+      CloseAccountResponse closeAccountResponse = new CloseAccountResponse();
+
+        Optional<Account> accountFound = accountRepository.findByAccountNumber(request.getAccountNumber());
+        if(accountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        Account account = accountFound.get();
+
+        accountRepository.delete(account);
+
+
+        closeAccountResponse.setMessage("Account closed");
+        return closeAccountResponse;
+
+    }
+
+    @Override
+    public AddAccountResponse addAccount(AddAccountRequest addAccountRequest) throws AccountAlreadyExistException {
+        AddAccountResponse addAccountResponse = new AddAccountResponse();
+        Account account = new Account();
+        if (!bankUserRepository.existsById(addAccountRequest.getEmailAddress())) {
+            account.setAccountFirstName(addAccountRequest.getAccountFirstName());
+            account.setAccountLastName(addAccountRequest.getAccountLastName());
+            account.setAccountType(addAccountRequest.getAccountType());
+            account.setEmailAddress(addAccountRequest.getEmailAddress());
+            account.setPin(addAccountRequest.getPin());
+            account.setBalance(account.getBalancee());
+            account.generateAccountNumber();
+
+            accountRepository.insert(account);
+            addAccountResponse.setAccountNumber(account.getAccountNumber());
+
+            addAccountResponse.setMessage("Account added");
+
+            return addAccountResponse;
+
+        }
+        else{
+          throw new AccountAlreadyExistException("Account already exist");
+        }
     }
 
 //
