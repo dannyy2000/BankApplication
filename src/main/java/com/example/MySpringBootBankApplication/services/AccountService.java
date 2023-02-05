@@ -12,21 +12,25 @@ import java.util.List;
 @Service
 public interface AccountService {
     CreateAccountResponse createAccount(CreateAccountRequest createAccountRequest) throws CreateAccountException;
-    ChangePinResponse changePin(ChangePinRequest changePinRequest) throws AccountNotFoundException, javax.security.auth.login.AccountNotFoundException;
+    ChangePinResponse changePin(ChangePinRequest changePinRequest) throws AccountDoesNotExistsException;
 
-    DepositAccountResponse deposit(DepositAccountRequest depositAccountRequest) throws DepositException, javax.security.auth.login.AccountNotFoundException;
+    DepositAccountResponse deposit(DepositAccountRequest depositAccountRequest) throws DepositException, AccountDoesNotExistsException;
     WithdrawalAccountResponse withdrawal(WithdrawalAccountRequest withdrawalAccountRequest)
-            throws javax.security.auth.login.AccountNotFoundException, WithdrawalException;
+            throws AccountDoesNotExistsException, WithdrawalException;
 
-    TransferResponse transfer(TransferRequest transferRequest) throws TransferException, javax.security.auth.login.AccountNotFoundException;
+    TransferResponse transfer(TransferRequest transferRequest) throws TransferException, AccountDoesNotExistsException;
 
    List<Account>findAllAccounts();
 
-   ShowBalanceResponse showBalance(ShowBalanceRequest balanceRequest) throws javax.security.auth.login.AccountNotFoundException;
+   ShowBalanceResponse showBalance(ShowBalanceRequest balanceRequest) throws AccountDoesNotExistsException;
 
-   CloseAccountResponse close(CloseAccountRequest request) throws javax.security.auth.login.AccountNotFoundException;
+   CloseAccountResponse close(CloseAccountRequest request) throws AccountDoesNotExistsException;
 
    AddAccountResponse addAccount(AddAccountRequest addAccountRequest) throws AccountAlreadyExistException;
+
+ ViewAccountResponse  viewAccount(ViewAccountRequest viewAccountRequest) throws AccountDoesNotExistsException;
+
+//    ViewAccountResponse viewAccount(ViewAccountRequest viewAccountRequest) throws AccountDoesNotExistsException;
 //
 //   Account findAccountByAccountNumber(String accountNumber);
 

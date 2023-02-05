@@ -10,7 +10,7 @@ public class CreateAccountRequest {
     private String accountLastName;
     private String pin;
     private String accountNumber;
-    private String id;
+//    private String id;
     private String emailAddress;
     private AccountType accountType;
     private BigDecimal balance;

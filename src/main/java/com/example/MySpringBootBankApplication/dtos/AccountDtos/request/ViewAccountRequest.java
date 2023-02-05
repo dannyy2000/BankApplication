@@ -2,9 +2,9 @@ package com.example.MySpringBootBankApplication.dtos.AccountDtos.request;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 @Data
-public class ShowBalanceRequest {
-    private String accountNumber;
+public class ViewAccountRequest {
+
+    private String emailAddress;
 
 }

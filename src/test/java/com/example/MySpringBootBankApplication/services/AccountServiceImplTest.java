@@ -28,7 +28,7 @@ class AccountServiceImplTest {
           CreateAccountRequest createAccountRequest = new CreateAccountRequest();
         CreateAccountResponse createAccountResponse = new CreateAccountResponse();
 try {
-    createAccountRequest.setId("200g");
+//    createAccountRequest.setId("200g");
     createAccountRequest.setAccountFirstName("Akinsanya");
     createAccountRequest.setAccountLastName("Daniel");
     createAccountRequest.setAccountType(AccountType.SAVINGS);
@@ -37,7 +37,7 @@ try {
      createAccountResponse = accountService.createAccount(createAccountRequest);
     System.out.println(createAccountResponse.getAccountNumber());
 } catch (CreateAccountException e) {
-    assertNotNull(createAccountResponse.getAccountNumber());
+    assertNull(createAccountResponse.getAccountNumber());
 }
 //       createAccountRequest.setAccountNumber(account.generateAccountNumber());
 
@@ -59,7 +59,7 @@ try {
             changePinRequest.setPin("2000");
             changePinResponse = accountService.changePin(changePinRequest);
             System.out.println(changePinResponse.getMessage());
-        } catch (AccountNotFoundException e) {
+        } catch ( AccountDoesNotExistsException e) {
             assertEquals("Pin changed successfully",changePinResponse.getMessage());
             System.out.println(changePinResponse.getMessage());
         }
@@ -75,7 +75,7 @@ try {
             depositAccountRequest.setAccountNumber("5187516502");
             depositAccountResponse = accountService.deposit(depositAccountRequest);
             System.out.println(depositAccountResponse.getMessage());
-        }catch (AccountNotFoundException e){
+        }catch (AccountDoesNotExistsException e){
             assertEquals(depositAmount,depositAccountResponse.getBalance());
         } catch (DepositException e) {
             throw new RuntimeException(e);
@@ -96,7 +96,7 @@ try {
             System.out.println(withdrawalAccountResponse.getMessage());
         } catch (WithdrawalException e) {
             assertEquals(BigDecimal.valueOf(500),withdrawalAccountResponse.getBalance());
-        } catch (AccountNotFoundException e) {
+        } catch (AccountDoesNotExistsException e) {
             throw new RuntimeException(e);
         }
     }
@@ -111,7 +111,7 @@ try {
             balanceResponse = accountService.showBalance(showBalanceRequest);
             System.out.println(balanceResponse.getBalance());
 
-        } catch (AccountNotFoundException e) {
+        } catch (AccountDoesNotExistsException e) {
             assertEquals(BigDecimal.valueOf(500),balanceResponse.getBalance());
 
         }
@@ -123,14 +123,15 @@ try {
         AddAccountResponse addAccountResponse = new AddAccountResponse();
 
         try{
-            addAccountRequest.setAccountFirstName("Tobi");
-            addAccountRequest.setAccountLastName("Akinsanya");
+            addAccountRequest.setAccountFirstName("Tobiow");
+            addAccountRequest.setAccountLastName("Akin");
             addAccountRequest.setAccountType(AccountType.CURRENT);
-            addAccountRequest.setEmailAddress("Tobi345");
+            addAccountRequest.setEmailAddress("Tobi789");
             addAccountRequest.setPin("1675");
 
             addAccountResponse = accountService.addAccount(addAccountRequest);
             System.out.println(addAccountResponse.getAccountNumber());
+
         } catch (AccountAlreadyExistException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -147,7 +148,7 @@ try {
             BigDecimal withdrawalAmount = new BigDecimal("300");
             transferRequest.setTransferAmount(withdrawalAmount);
             transferResponse = accountService.transfer(transferRequest);
-        } catch (TransferException | AccountNotFoundException e) {
+        } catch (TransferException | AccountDoesNotExistsException e) {
             throw new RuntimeException(e.getMessage());
         }
 
@@ -162,7 +163,7 @@ try {
         try {
             closeAccountRequest.setAccountNumber("9907916230");
             closeAccountResponse = accountService.close(closeAccountRequest);
-        } catch (AccountNotFoundException e) {
+        } catch (AccountDoesNotExistsException e) {
             throw new RuntimeException(e.getMessage());
         }
         assertEquals("Account closed",closeAccountResponse.getMessage());

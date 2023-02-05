@@ -10,8 +10,8 @@ import com.example.MySpringBootBankApplication.exception.AccountException.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,10 +25,10 @@ public class AccountServiceImpl implements AccountService {
     private AccountRepository accountRepository;
 
     @Override
-    public CreateAccountResponse createAccount(CreateAccountRequest createAccountRequest) throws CreateAccountException {
-        CreateAccountResponse createAccountResponse = new CreateAccountResponse();
-        if (bankUserRepository.existsById(createAccountRequest.getEmailAddress())) {
-            Account account = new Account();
+    public CreateAccountResponse createAccount(CreateAccountRequest createAccountRequest){
+//
+        if (bankUserRepository.findBankUserByEmailAddress(createAccountRequest.getEmailAddress()).isPresent()) throw new CreateAccountException("email exist");
+        Account account = new Account();
             account.setAccountFirstName(createAccountRequest.getAccountFirstName());
             account.setAccountLastName(createAccountRequest.getAccountLastName());
             account.setAccountType(createAccountRequest.getAccountType());
@@ -37,26 +37,27 @@ public class AccountServiceImpl implements AccountService {
             account.generateAccountNumber();
 
             accountRepository.save(account);
+            CreateAccountResponse createAccountResponse = new CreateAccountResponse();
 
             createAccountResponse.setAccountNumber(account.getAccountNumber());
             createAccountResponse.setMessage("Account created Successfully");
 
             return createAccountResponse;
-        }else throw new CreateAccountException("user does not exist");
     }
     @Override
-    public ChangePinResponse changePin(ChangePinRequest changePinRequest) throws AccountNotFoundException{
+    public ChangePinResponse changePin(ChangePinRequest changePinRequest) throws AccountDoesNotExistsException {
         ChangePinResponse changePinResponse = new ChangePinResponse();
         Optional<Account> accountFound = accountRepository.findByAccountNumber(changePinRequest.getAccountNumber());
 
         if (accountFound.isEmpty()) {
-            throw new AccountNotFoundException("Account not found");
+            throw new AccountDoesNotExistsException("Account not found");
         }
             Account account = accountFound.get();
             account.setPin(changePinRequest.getPin());
             accountRepository.save(account);
 
             changePinResponse.setAccountNumber(account.getAccountNumber());
+            changePinResponse.setPin(account.getPin());
             changePinResponse.setMessage("Pin changed successfully");
 
              return changePinResponse;
@@ -66,10 +67,10 @@ public class AccountServiceImpl implements AccountService {
 
 
     @Override
-    public DepositAccountResponse deposit(DepositAccountRequest depositAccountRequest) throws AccountNotFoundException, DepositException {
+    public DepositAccountResponse deposit(DepositAccountRequest depositAccountRequest) throws AccountDoesNotExistsException ,DepositException {
         DepositAccountResponse depositAccountResponse = new DepositAccountResponse();
         Optional<Account> accountFound = accountRepository.findByAccountNumber(depositAccountRequest.getAccountNumber());
-        if(accountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        if(accountFound.isEmpty())throw new AccountDoesNotExistsException("Account not found");
         Account account = accountFound.get();
 //        if(depositAccountRequest.getDepositAmount() < 0) throw new DepositException("Enter a valid deposit amount");
          validateDepositAmount(depositAccountRequest);
@@ -89,10 +90,10 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public WithdrawalAccountResponse withdrawal(WithdrawalAccountRequest withdrawalAccountRequest) throws
-            AccountNotFoundException, WithdrawalException {
+            AccountDoesNotExistsException, WithdrawalException {
         WithdrawalAccountResponse withdrawalAccountResponse = new WithdrawalAccountResponse();
         Optional<Account> accountFound = accountRepository.findByAccountNumber(withdrawalAccountRequest.getAccountNumber());
-        if(accountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        if(accountFound.isEmpty())throw new AccountDoesNotExistsException("Account not found");
         Account account = accountFound.get();
 
         if(withdrawalAccountRequest.getWithdrawalAmount().compareTo(account.getBalance()) > 0)
@@ -112,14 +113,14 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public TransferResponse transfer(TransferRequest transferRequest) throws AccountNotFoundException, TransferException {
+    public TransferResponse transfer(TransferRequest transferRequest) throws AccountDoesNotExistsException, TransferException {
         TransferResponse response = new TransferResponse();
         Optional<Account> depositorAccountFound = accountRepository.findByAccountNumber(transferRequest.getDepositorAccountNumber());
-        if(depositorAccountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        if(depositorAccountFound.isEmpty())throw new AccountDoesNotExistsException("Account not found");
         Account depositor = depositorAccountFound.get();
 
         Optional<Account> receiverAccountFound = accountRepository.findByAccountNumber(transferRequest.getRecipientAccountNumber());
-        if(receiverAccountFound.isEmpty())throw new AccountNotFoundException("Account does not exist");
+        if(receiverAccountFound.isEmpty())throw new AccountDoesNotExistsException("Account does not exist");
         Account receiver = receiverAccountFound.get();
 
         if(depositor.getBalance().compareTo(transferRequest.getTransferAmount()) < 0)
@@ -132,6 +133,8 @@ public class AccountServiceImpl implements AccountService {
 
 
         response.setMessage("Transfer sent successful");
+        response.setDepositorBalance(depositor.getBalance());
+        response.setRecipientBalance(receiver.getBalance());
 
         return response;
 
@@ -148,27 +151,25 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public ShowBalanceResponse showBalance(ShowBalanceRequest balanceRequest) throws AccountNotFoundException{
+    public ShowBalanceResponse showBalance(ShowBalanceRequest balanceRequest) throws AccountDoesNotExistsException{
        ShowBalanceResponse balanceResponse = new ShowBalanceResponse();
         Optional<Account> accountFound = accountRepository.findByAccountNumber(balanceRequest.getAccountNumber());
-        if(accountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        if(accountFound.isEmpty())throw new AccountDoesNotExistsException("Account not found");
         Account account = accountFound.get();
 
 
-           accountRepository.save(account);
-
-
         balanceResponse.setBalance(account.getBalance());
+        balanceResponse.setAccountNumber(account.getAccountNumber());
 
         return balanceResponse;
     }
 
     @Override
-    public CloseAccountResponse close(CloseAccountRequest request) throws AccountNotFoundException {
+    public CloseAccountResponse close(CloseAccountRequest request) throws AccountDoesNotExistsException {
       CloseAccountResponse closeAccountResponse = new CloseAccountResponse();
 
         Optional<Account> accountFound = accountRepository.findByAccountNumber(request.getAccountNumber());
-        if(accountFound.isEmpty())throw new AccountNotFoundException("Account not found");
+        if(accountFound.isEmpty())throw new AccountDoesNotExistsException("Account not found");
         Account account = accountFound.get();
 
         accountRepository.delete(account);
@@ -205,14 +206,50 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    @Override
+    public ViewAccountResponse viewAccount(ViewAccountRequest viewAccountRequest) throws AccountDoesNotExistsException {
+
+      Optional<Account> accountFound = accountRepository.findByEmailAddress(viewAccountRequest.getEmailAddress());
+
+        if(accountFound.isEmpty()) throw new AccountDoesNotExistsException("Account does not exist");
+
+        Account account = accountFound.get();
 //
+        ViewAccountResponse viewAccountResponse = new ViewAccountResponse();
+//        List<ViewAccountResponse> viewAccountResponse2 = new ArrayList<>();
+//        account.forEach(account2 -> {
+        viewAccountResponse.setAccountNumber(account.getAccountNumber());
+        viewAccountResponse.setAccountType(account.getAccountType());
+        viewAccountResponse.setEmailAddress(account.getEmailAddress());
+        viewAccountResponse.setFirstName(account.getAccountFirstName());
+        viewAccountResponse.setLastName(account.getAccountLastName());
+        viewAccountResponse.setPin(account.getPin());
+
+
+        return viewAccountResponse;
+    }
+
+//    @Override
+//    public ViewAccountResponse viewAccount(ViewAccountRequest viewAccountRequest) throws AccountDoesNotExistsException {
+////        ViewAccountResponse viewAccountResponse = new ViewAccountResponse();
+//        Optional <Account> accountFound = accountRepository.findByEmailAddress(viewAccountRequest.getEmailAddress());
+//
+//        if(accountFound.isEmpty()) throw new AccountDoesNotExistsException("Account does not exist");
+//
+//        Account account = accountFound.get();
+//
+//        viewAccountResponse.setAccountNumber(account.getAccountNumber());
+//        viewAccountResponse.setAccountType(account.getAccountType());
+//        viewAccountResponse.setEmailAddress(account.getEmailAddress());
+//        viewAccountResponse.setFirstName(account.getAccountFirstName());
+//        viewAccountResponse.setLastName(account.getAccountLastName());
+//
+//        return viewAccountResponse;
+
+
+//    }
 
 
 }
-//
-//
-//    public Account findAccount(String id) {
-//        return accountRepository.findByAccountId(id);
-//
-//    }
-//}
+
+

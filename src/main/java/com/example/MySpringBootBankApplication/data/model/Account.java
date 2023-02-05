@@ -20,6 +20,7 @@ public class Account {
     @NonNull
     private String pin;
     @NonNull
+
     private String emailAddress;
     @NonNull
     private String accountFirstName;
